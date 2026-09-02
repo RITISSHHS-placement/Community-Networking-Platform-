@@ -1,0 +1,26 @@
+# MySQL profile. Activate with: mvn spring-boot:run -Dspring-boot.run.profiles=mysql
+# or: java -jar app.jar --spring.profiles.active=mysql
+#
+# Create the database first:
+#   CREATE DATABASE cned CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3306/cned?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true}
+    driver-class-name: ${DB_DRIVER:com.mysql.cj.jdbc.Driver}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:password}
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.MySQLDialect
+    database-platform: org.hibernate.dialect.MySQLDialect
+
+  h2:
+    console:
+      enabled: false
