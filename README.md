@@ -1,4 +1,6 @@
 # Community Networking and Events Discovery Platform
+Project link:
+https://community-networking-platform.vercel.app/
 
 Full project from the SRS, as one repo:
 
