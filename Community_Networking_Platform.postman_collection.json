@@ -1,0 +1,1120 @@
+{
+  "info": {
+    "name": "Community Networking Platform",
+    "description": "Complete API collection for the Community Networking Platform Spring Boot backend.\n\n**How to use:**\n1. Set the `baseUrl` collection variable to `http://localhost:8081`\n2. Run **Register** or **Login** first — the test script auto-saves the JWT to `{{token}}`\n3. All other requests use `{{token}}` automatically via collection-level Bearer auth\n4. Use `{{userId}}`, `{{communityId}}`, `{{eventId}}`, `{{postId}}` variables for ID-based requests\n\n**Roles accepted:** GUEST, MEMBER, MODERATOR, EVENT_ORGANISER, COMMUNITY_MANAGER, ADMIN",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    { "key": "baseUrl",      "value": "http://localhost:8081", "type": "string" },
+    { "key": "token",        "value": "",  "type": "string" },
+    { "key": "userId",       "value": "1", "type": "string" },
+    { "key": "communityId",  "value": "1", "type": "string" },
+    { "key": "eventId",      "value": "1", "type": "string" },
+    { "key": "postId",       "value": "1", "type": "string" }
+  ],
+  "item": [
+
+    {
+      "name": "🔓 Auth",
+      "description": "Register, login, and logout. Login and Register auto-save the JWT to {{token}} and {{userId}} via the test script.",
+      "item": [
+
+        {
+          "name": "Register",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept",       "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "register"]
+            },
+            "description": "Creates a new user account.\n\n**Password rules:** min 8 chars, must include uppercase, lowercase, digit, and special character.\n\n**Roles:** GUEST | MEMBER | MODERATOR | EVENT_ORGANISER | COMMUNITY_MANAGER | ADMIN",
+            "body": {
+              "mode": "raw",
+              "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"name\": \"Alice Smith\",\n  \"email\": \"alice@example.com\",\n  \"phoneNumber\": \"9876543210\",\n  \"password\": \"Secure@123\",\n  \"role\": \"MEMBER\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                  "pm.test('Response is JSON', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'));",
+                  "pm.test('Token present', () => pm.expect(pm.response.json()).to.have.property('token'));",
+                  "if (pm.response.code === 201) {",
+                  "  const d = pm.response.json();",
+                  "  pm.collectionVariables.set('token',  d.token);",
+                  "  pm.collectionVariables.set('userId', String(d.userId));",
+                  "  console.log('Token saved. userId =', d.userId);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "201 Created",
+              "status": "Created", "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"token\": \"eyJhbGciOiJIUzI1NiJ9.example.token\",\n  \"userId\": 1,\n  \"name\": \"Alice Smith\",\n  \"email\": \"alice@example.com\",\n  \"role\": \"MEMBER\"\n}"
+            },
+            {
+              "name": "400 Validation error (weak password)",
+              "status": "Bad Request", "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"timestamp\": \"2026-09-02T10:15:30\",\n  \"status\": 400,\n  \"error\": \"Bad Request\",\n  \"message\": \"Password must meet security requirements\"\n}"
+            },
+            {
+              "name": "409 Email already registered",
+              "status": "Conflict", "code": 409,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"timestamp\": \"2026-09-02T10:15:30\",\n  \"status\": 409,\n  \"error\": \"Conflict\",\n  \"message\": \"This email is already registered\"\n}"
+            }
+          ]
+        },
+
+        {
+          "name": "Login",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept",       "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            },
+            "description": "Multi-credential login. `identifier` can be email address, phone number, or numeric user ID.",
+            "body": {
+              "mode": "raw",
+              "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"identifier\": \"alice@example.com\",\n  \"password\": \"Secure@123\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Token present', () => pm.expect(pm.response.json()).to.have.property('token'));",
+                  "if (pm.response.code === 200) {",
+                  "  const d = pm.response.json();",
+                  "  pm.collectionVariables.set('token',  d.token);",
+                  "  pm.collectionVariables.set('userId', String(d.userId));",
+                  "  console.log('Logged in as', d.email, '| role:', d.role);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK", "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"token\": \"eyJhbGciOiJIUzI1NiJ9.example.token\",\n  \"userId\": 1,\n  \"name\": \"Alice Smith\",\n  \"email\": \"alice@example.com\",\n  \"role\": \"MEMBER\"\n}"
+            },
+            {
+              "name": "400 Blank identifier or password",
+              "status": "Bad Request", "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"timestamp\": \"2026-09-02T10:15:30\",\n  \"status\": 400,\n  \"error\": \"Bad Request\",\n  \"message\": \"Email, username, or mobile is required\"\n}"
+            },
+            {
+              "name": "401 Wrong credentials",
+              "status": "Unauthorized", "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"timestamp\": \"2026-09-02T10:15:30\",\n  \"status\": 401,\n  \"error\": \"Unauthorized\",\n  \"message\": \"Invalid credentials. Please check your email and password.\"\n}"
+            }
+          ]
+        },
+
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "logout"]
+            },
+            "description": "Blacklists the current JWT so it can no longer authenticate. Uses the collection-level Bearer token."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Logout message', () => pm.expect(pm.response.json().message).to.include('Logged out'));",
+                  "pm.collectionVariables.set('token', '');",
+                  "console.log('Token cleared from collection variables.');"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK", "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"message\": \"Logged out successfully\"\n}"
+            }
+          ]
+        }
+
+      ]
+    },
+
+    {
+      "name": "👤 Members & Profile",
+      "description": "Member registration, profile lookup, and profile updates.",
+      "item": [
+
+        {
+          "name": "Register Member (alias)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept",       "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/members/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "members", "register"]
+            },
+            "description": "Alternative registration endpoint — identical to /api/auth/register. Useful for registering users with operational roles.",
+            "body": {
+              "mode": "raw",
+              "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"name\": \"Dana Okafor\",\n  \"email\": \"dana@example.com\",\n  \"phoneNumber\": \"9123456780\",\n  \"password\": \"Secure@123\",\n  \"role\": \"COMMUNITY_MANAGER\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                  "if (pm.response.code === 201) {",
+                  "  const d = pm.response.json();",
+                  "  pm.collectionVariables.set('token',  d.token);",
+                  "  pm.collectionVariables.set('userId', String(d.userId));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+
+        {
+          "name": "Get Member by ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/members/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "members", "{{userId}}"]
+            },
+            "description": "Returns public profile of a member by their numeric ID. Requires auth."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200 or 404', () => pm.expect([200, 404]).to.include(pm.response.code));",
+                  "if (pm.response.code === 200) pm.test('Has id field', () => pm.expect(pm.response.json()).to.have.property('id'));"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK", "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"id\": 1,\n  \"name\": \"Alice Smith\",\n  \"email\": \"alice@example.com\",\n  \"phoneNumber\": \"9876543210\",\n  \"role\": \"MEMBER\",\n  \"createdDate\": \"2026-09-02T10:15:30\"\n}"
+            },
+            {
+              "name": "404 Not Found",
+              "status": "Not Found", "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"timestamp\": \"2026-09-02T10:15:30\",\n  \"status\": 404,\n  \"error\": \"Not Found\",\n  \"message\": \"Member not found with id: 999\"\n}"
+            }
+          ]
+        },
+
+        {
+          "name": "Get My Profile",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "profile"]
+            },
+            "description": "Returns the profile of the currently authenticated user derived from the JWT."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Has email', () => pm.expect(pm.response.json()).to.have.property('email'));"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK", "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"id\": 1,\n  \"name\": \"Alice Smith\",\n  \"email\": \"alice@example.com\",\n  \"phoneNumber\": \"9876543210\",\n  \"role\": \"MEMBER\",\n  \"createdDate\": \"2026-09-02T10:15:30\"\n}"
+            }
+          ]
+        },
+
+        {
+          "name": "Update My Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept",       "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "profile"]
+            },
+            "description": "Updates name and/or phoneNumber for the authenticated user. Email and password are intentionally not editable here. Only changed fields need to be sent — both are optional.",
+            "body": {
+              "mode": "raw",
+              "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"name\": \"Alice K. Smith\",\n  \"phoneNumber\": \"9000000001\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Name updated', () => pm.expect(pm.response.json().name).to.be.a('string'));"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK", "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"id\": 1,\n  \"name\": \"Alice K. Smith\",\n  \"email\": \"alice@example.com\",\n  \"phoneNumber\": \"9000000001\",\n  \"role\": \"MEMBER\",\n  \"createdDate\": \"2026-09-02T10:15:30\"\n}"
+            }
+          ]
+        }
+
+      ]
+    },
+
+    {
+      "name": "🏘️ Communities",
+      "description": "Create communities, browse the public discovery feed, and join communities.",
+      "item": [
+
+        {
+          "name": "Discover Communities (Public)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/communities/discover",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "communities", "discover"]
+            },
+            "description": "Public endpoint — no auth required. Returns all active communities."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Returns array', () => pm.expect(pm.response.json()).to.be.an('array'));",
+                  "if (pm.response.json().length > 0) {",
+                  "  pm.collectionVariables.set('communityId', String(pm.response.json()[0].id));",
+                  "  console.log('communityId set to', pm.response.json()[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK", "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "[\n  {\n    \"id\": 1,\n    \"name\": \"Founders Collective\",\n    \"description\": \"For early-stage founders\",\n    \"private\": false,\n    \"memberCount\": 2140,\n    \"createdDate\": \"2026-09-01T09:00:00\"\n  }\n]"
+            }
+          ]
+        },
+
+        {
+          "name": "Create Community",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept",       "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/communities",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "communities"]
+            },
+            "description": "Creates a new community. Requires any authenticated user.",
+            "body": {
+              "mode": "raw",
+              "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"name\": \"AI Builders\",\n  \"description\": \"Hands-on AI enthusiasts building real projects\",\n  \"isPrivate\": false\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                  "if (pm.response.code === 201) {",
+                  "  pm.collectionVariables.set('communityId', String(pm.response.json().id));",
+                  "  console.log('communityId set to', pm.response.json().id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "201 Created",
+              "status": "Created", "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"id\": 2,\n  \"name\": \"AI Builders\",\n  \"description\": \"Hands-on AI enthusiasts building real projects\",\n  \"private\": false,\n  \"memberCount\": 1,\n  \"createdDate\": \"2026-09-02T11:00:00\"\n}"
+            }
+          ]
+        },
+
+        {
+          "name": "Join Community",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/communities/{{communityId}}/join",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "communities", "{{communityId}}", "join"]
+            },
+            "description": "Authenticated user joins the community specified by `communityId`."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK", "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"id\": 1,\n  \"name\": \"Founders Collective\",\n  \"memberCount\": 2141\n}"
+            },
+            {
+              "name": "404 Community not found",
+              "status": "Not Found", "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"timestamp\": \"2026-09-02T10:15:30\",\n  \"status\": 404,\n  \"error\": \"Not Found\",\n  \"message\": \"Community not found with id: 999\"\n}"
+            }
+          ]
+        }
+
+      ]
+    },
+
+    {
+      "name": "📅 Events",
+      "description": "Event creation (organiser/manager/admin), public discovery, RSVP, analytics, and bulk CSV import.",
+      "item": [
+
+        {
+          "name": "Discover Events (Public)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/events/discover",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "events", "discover"]
+            },
+            "description": "Public endpoint — no auth required. Returns all upcoming events."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Returns array', () => pm.expect(pm.response.json()).to.be.an('array'));",
+                  "if (pm.response.json().length > 0) {",
+                  "  pm.collectionVariables.set('eventId', String(pm.response.json()[0].id));",
+                  "  console.log('eventId set to', pm.response.json()[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK", "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "[\n  {\n    \"id\": 1,\n    \"title\": \"Sunset Jazz Night\",\n    \"eventDate\": \"2026-10-12T18:00:00\",\n    \"location\": \"Coimbatore, IN\",\n    \"capacity\": 400,\n    \"rsvpCount\": 312,\n    \"ticketType\": \"FREE\",\n    \"price\": 0.0,\n    \"status\": \"UPCOMING\"\n  }\n]"
+            }
+          ]
+        },
+
+        {
+          "name": "Create Event",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept",       "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/events",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "events"]
+            },
+            "description": "Creates a new event.\n\n**Roles required:** EVENT_ORGANISER, COMMUNITY_MANAGER, or ADMIN\n\n**ticketType:** FREE or PAID\n**eventDate:** ISO-8601 future datetime",
+            "body": {
+              "mode": "raw",
+              "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"title\": \"React & Beyond Workshop\",\n  \"eventDate\": \"2027-01-18T10:00:00\",\n  \"location\": \"Coimbatore Tech Park\",\n  \"lat\": 11.0168,\n  \"lng\": 76.9558,\n  \"capacity\": 200,\n  \"ticketType\": \"PAID\",\n  \"price\": 25.00\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                  "if (pm.response.code === 201) {",
+                  "  pm.collectionVariables.set('eventId', String(pm.response.json().id));",
+                  "  console.log('eventId set to', pm.response.json().id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "201 Created",
+              "status": "Created", "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"id\": 3,\n  \"title\": \"React & Beyond Workshop\",\n  \"eventDate\": \"2027-01-18T10:00:00\",\n  \"location\": \"Coimbatore Tech Park\",\n  \"capacity\": 200,\n  \"rsvpCount\": 0,\n  \"ticketType\": \"PAID\",\n  \"price\": 25.0,\n  \"status\": \"UPCOMING\"\n}"
+            },
+            {
+              "name": "403 Forbidden (wrong role)",
+              "status": "Forbidden", "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"timestamp\": \"2026-09-02T10:15:30\",\n  \"status\": 403,\n  \"error\": \"Forbidden\",\n  \"message\": \"Access Denied\"\n}"
+            }
+          ]
+        },
+
+        {
+          "name": "RSVP to Event",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/events/{{eventId}}/rsvp",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "events", "{{eventId}}", "rsvp"]
+            },
+            "description": "Toggles RSVP for the authenticated user on the specified event. Increments `rsvpCount` on first call."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('rsvpCount present', () => pm.expect(pm.response.json()).to.have.property('rsvpCount'));"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK", "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"id\": 1,\n  \"title\": \"Sunset Jazz Night\",\n  \"rsvpCount\": 313,\n  \"capacity\": 400,\n  \"status\": \"UPCOMING\"\n}"
+            }
+          ]
+        },
+
+        {
+          "name": "Get Event Analytics",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/events/{{eventId}}/analytics",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "events", "{{eventId}}", "analytics"]
+            },
+            "description": "Returns RSVP count, capacity, fill-rate percentage, and status for an event."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Has capacityUsedPercent', () => pm.expect(pm.response.json()).to.have.property('capacityUsedPercent'));"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK", "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"eventId\": 1,\n  \"rsvpCount\": 313,\n  \"capacity\": 400,\n  \"capacityUsedPercent\": 78.3,\n  \"status\": \"UPCOMING\"\n}"
+            }
+          ]
+        },
+
+        {
+          "name": "Bulk Import Events (CSV)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/events/bulk-import",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "events", "bulk-import"]
+            },
+            "description": "Imports multiple events from a CSV file.\n\n**Roles required:** EVENT_ORGANISER, COMMUNITY_MANAGER, ADMIN\n\n**CSV header row:**\n`title,eventDate,location,lat,lng,capacity,ticketType,price`\n\n**Example CSV row:**\n`Sunset Jazz Night,2027-07-12T18:00:00,Coimbatore,11.0168,76.9558,400,FREE,0`\n\nEach row is validated independently — bad rows are reported but don't abort the batch.",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": [],
+                  "description": "CSV file with header: title,eventDate,location,lat,lng,capacity,ticketType,price"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 OK — Import result",
+              "status": "OK", "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"imported\": 10,\n  \"failed\": 1,\n  \"errors\": [\n    { \"row\": 3, \"reason\": \"eventDate must be a future date\" }\n  ]\n}"
+            }
+          ]
+        }
+
+      ]
+    },
+
+    {
+      "name": "📝 Posts & Feed",
+      "description": "Create posts, browse the community feed, like, report, and moderate posts.",
+      "item": [
+
+        {
+          "name": "Get Community Feed",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/feed",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "feed"]
+            },
+            "description": "Returns all posts in reverse-chronological order. Requires auth."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Returns array', () => pm.expect(pm.response.json()).to.be.an('array'));",
+                  "if (pm.response.json().length > 0) {",
+                  "  pm.collectionVariables.set('postId', String(pm.response.json()[0].id));",
+                  "  console.log('postId set to', pm.response.json()[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK", "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "[\n  {\n    \"id\": 1,\n    \"content\": \"Tickets for Sunset Jazz Night just went live!\",\n    \"postType\": \"TEXT\",\n    \"likeCount\": 48,\n    \"flagged\": false,\n    \"communityId\": 1,\n    \"authorId\": 1,\n    \"createdDate\": \"2026-09-02T08:00:00\"\n  }\n]"
+            }
+          ]
+        },
+
+        {
+          "name": "Create Post",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept",       "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/posts",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "posts"]
+            },
+            "description": "Creates a new post in a community.\n\n**postType:** TEXT (default) | IMAGE | ARTICLE | POLL",
+            "body": {
+              "mode": "raw",
+              "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"communityId\": {{communityId}},\n  \"content\": \"Excited to share my latest project with the community!\",\n  \"postType\": \"TEXT\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                  "if (pm.response.code === 201) {",
+                  "  pm.collectionVariables.set('postId', String(pm.response.json().id));",
+                  "  console.log('postId set to', pm.response.json().id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "201 Created",
+              "status": "Created", "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"id\": 5,\n  \"content\": \"Excited to share my latest project!\",\n  \"postType\": \"TEXT\",\n  \"likeCount\": 0,\n  \"flagged\": false,\n  \"communityId\": 1,\n  \"authorId\": 1,\n  \"createdDate\": \"2026-09-02T12:00:00\"\n}"
+            }
+          ]
+        },
+
+        {
+          "name": "Like Post",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/posts/{{postId}}/like",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "posts", "{{postId}}", "like"]
+            },
+            "description": "Increments the like count on a post."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('likeCount present', () => pm.expect(pm.response.json()).to.have.property('likeCount'));"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK", "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"id\": 1,\n  \"likeCount\": 49,\n  \"flagged\": false\n}"
+            }
+          ]
+        },
+
+        {
+          "name": "Report Post",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/posts/{{postId}}/report",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "posts", "{{postId}}", "report"]
+            },
+            "description": "Flags a post for moderator review."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 OK — Post flagged",
+              "status": "OK", "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"id\": 1,\n  \"flagged\": true,\n  \"likeCount\": 48\n}"
+            }
+          ]
+        },
+
+        {
+          "name": "Moderate Post",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/posts/{{postId}}/moderate?flagged=true",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "posts", "{{postId}}", "moderate"],
+              "query": [
+                { "key": "flagged", "value": "true", "description": "true = keep flagged / false = clear flag" }
+              ]
+            },
+            "description": "Sets or clears the flagged state on a post.\n\n**Roles required:** MODERATOR, COMMUNITY_MANAGER, ADMIN\n\n`?flagged=true` — mark as flagged\n`?flagged=false` — clear flag (approve content)"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 OK — Flag cleared",
+              "status": "OK", "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"id\": 1,\n  \"flagged\": false,\n  \"likeCount\": 48\n}"
+            },
+            {
+              "name": "403 Forbidden (wrong role)",
+              "status": "Forbidden", "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"status\": 403,\n  \"error\": \"Forbidden\",\n  \"message\": \"Access Denied\"\n}"
+            }
+          ]
+        }
+
+      ]
+    },
+
+    {
+      "name": "🛡️ Admin",
+      "description": "Platform administration — all endpoints require the ADMIN role.\n\nMake sure to register/login with role ADMIN before using these.",
+      "item": [
+
+        {
+          "name": "List All Users",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/users",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "users"]
+            },
+            "description": "Returns all registered users. **Requires ADMIN role.**"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK or 403', () => pm.expect([200, 403]).to.include(pm.response.code));",
+                  "if (pm.response.code === 200) pm.test('Returns array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK", "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "[\n  {\n    \"id\": 1,\n    \"name\": \"Alice Smith\",\n    \"email\": \"alice@example.com\",\n    \"role\": \"MEMBER\",\n    \"active\": true,\n    \"createdDate\": \"2026-09-02T10:15:30\"\n  }\n]"
+            }
+          ]
+        },
+
+        {
+          "name": "Set User Active Status",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/users/{{userId}}/status?active=false",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "users", "{{userId}}", "status"],
+              "query": [
+                { "key": "active", "value": "false", "description": "true = activate account | false = suspend account" }
+              ]
+            },
+            "description": "Activates or suspends a user account.\n\n**Requires ADMIN role.**\n\n`?active=false` — suspend user\n`?active=true` — reinstate user"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK or 403', () => pm.expect([200, 403]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 OK — User suspended",
+              "status": "OK", "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"id\": 1,\n  \"name\": \"Alice Smith\",\n  \"active\": false,\n  \"role\": \"MEMBER\"\n}"
+            }
+          ]
+        },
+
+        {
+          "name": "Change User Role",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/users/{{userId}}/role?role=MODERATOR",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "users", "{{userId}}", "role"],
+              "query": [
+                { "key": "role", "value": "MODERATOR", "description": "New role: GUEST | MEMBER | MODERATOR | EVENT_ORGANISER | COMMUNITY_MANAGER | ADMIN" }
+              ]
+            },
+            "description": "Changes the role of a user.\n\n**Requires ADMIN role.**\n\n**Available roles:** GUEST, MEMBER, MODERATOR, EVENT_ORGANISER, COMMUNITY_MANAGER, ADMIN"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK or 403', () => pm.expect([200, 403]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 OK — Role updated",
+              "status": "OK", "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"id\": 1,\n  \"name\": \"Alice Smith\",\n  \"role\": \"MODERATOR\",\n  \"active\": true\n}"
+            }
+          ]
+        },
+
+        {
+          "name": "Get Platform Stats",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "stats"]
+            },
+            "description": "Returns platform-wide statistics.\n\n**Requires ADMIN role.**"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK or 403', () => pm.expect([200, 403]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK", "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"totalUsers\": 18420,\n  \"activeUsers\": 17980,\n  \"totalCommunities\": 24,\n  \"totalEvents\": 87,\n  \"totalPosts\": 3842\n}"
+            }
+          ]
+        }
+
+      ]
+    },
+
+    {
+      "name": "🩺 Health",
+      "description": "Public health check — use this to confirm the backend is running before running other requests.",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/actuator/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["actuator", "health"]
+            },
+            "description": "Spring Actuator health endpoint. Returns {\"status\": \"UP\"} when the backend is running."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Status is UP', () => pm.expect(pm.response.json().status).to.eql('UP'));"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 OK — UP",
+              "status": "OK", "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"status\": \"UP\"\n}"
+            }
+          ]
+        }
+      ]
+    }
+
+  ]
+}
